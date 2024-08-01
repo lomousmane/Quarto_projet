@@ -1,0 +1,158 @@
+---
+title: "Prédiction des fleurs d'iris avec la RL"
+format: pdf
+author: Ousmane lom
+---
+
+# Installation des librairies
+
+```{r echo=TRUE,message=FALSE}
+library(prettyR)
+library(tidyverse)
+library(gt)
+library(corrplot)
+library(nnet)
+
+```
+
+Dataset des Fleurs d'iris
+
+```{r}
+data=iris
+```
+
+# Structure des données
+
+```{r echo=FALSE,message=TRUE}
+str(data)
+```
+
+# Visualisez les 1er lignes
+
+```{r}
+iris %>% 
+                  head(n=10) %>% 
+                  gt()
+```
+
+# Analyse descriptive de l'ensemble des variables
+
+```{r}
+describe(data)
+
+```
+
+# Visualisez les variables
+
+### Diagramme en histogramme de la variable Petal.length
+
+```{r message=TRUE,echo=TRUE}
+
+ggplot(iris,aes(x=Petal.Length))+
+                  geom_histogram(color="blue",fill="gray3")
+```
+
+# Distribution de la variable Petal.length
+
+## Diagramme en boxplot
+
+```{r}
+ggplot(iris,aes(x="",y=Sepal.Length))+geom_boxplot(fill="turquoise",outliers = TRUE)
+```
+
+# Correlation entre les variables quantitatives
+
+```{r echo=TRUE,message=TRUE}
+corr=round(cor(iris[,-5]),2)
+corr
+corrplot(corr,method="number")
+
+```
+
+# Distribution du Petal length par variété (Species)
+
+```{r}
+ggplot(iris,aes(x=Species,y=Petal.Length,fill = Species))+
+geom_boxplot(color="blue")+
+                  labs(x="Species",y="Petal length",title="Distribution des Pétales par espéce")
+
+```
+
+## Analyse de la variance
+
+H0: Pas de différence significative de la longueur des pétales entre variétes
+
+H1: Il ya une différence signicative entre la longueur des pétales entre variétes de fleurs
+
+```{r}
+anova=aov(Petal.Length~Species,iris)
+summary(anova)
+```
+
+\textbf{Conclusion:} Donc on note un effet siginificatif entre les variétes selon la longueur des pétales
+
+# Apprentissage automatique
+
+## Prediction des fleurs par un modéle multinomial
+
+Partitionner la base de donnée en donnée d'entrainement de notre modéle à 70% et test à 30%
+
+```{r}
+set.seed(1234)
+ind<-sample(2,nrow(iris),replace = T,prob = c(0.70,0.30))
+train=iris[ind==1,]
+test=iris[ind==2,]
+
+
+```
+
+Dimension train et test data
+
+```{r}
+cat("dimension_train est:",dim(train),fill = T)
+cat("dimension_test est:",dim(test),fill = T)
+
+
+
+```
+
+## Construire le modéle
+
+```{r}
+model=multinom(Species~., data=iris)
+
+```
+
+## Resumé du modéle
+
+```{r}
+summary(model)
+```
+
+Prédiction du model avec les données test
+
+```{r}
+predictions=predict(model,test)
+predictions[1:10]
+```
+
+### Calcul de l'accuracy du modéle
+
+```{r}
+tab=table(test$Species,predictions)
+tab
+
+```
+
+## Calcul de l'accuracy
+
+$$
+accuray=\frac{\sum(diag(tab))}{\sum(tab)}
+$$
+
+```{r}
+accuracy=sum(diag(tab))/sum(tab)
+cat("accuracy est",accuracy,fill=T)
+```
+
+Le modéle prédit à 100% le type de fleur
